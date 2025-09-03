@@ -1,0 +1,106 @@
+.topbar {
+    display: flex;
+    justify-content: space-between; // Giữ logo bên trái, menu bên phải
+    align-items: center; // Căn giữa theo chiều dọc
+    padding: 12px 24px;
+    background-color: #ffffff; // Màu nền trắng
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); // Đổ bóng nhẹ
+    position: sticky;
+    top: 0;
+    z-index: 1000; // Đảm bảo header luôn nằm trên cùng
+    width: 100%;
+    box-sizing: border-box;
+  
+    // Logo và tên
+    .d-flex.align-items-center {
+      display: flex;
+      align-items: center; // Căn giữa logo và tên theo chiều dọc
+      // Không thêm justify-content để giữ logo và tên sát bên trái
+  
+      img {
+        height: 50px; // Kích thước logo từ JSX
+        width: 50px;
+        margin-right: 10px; // Khoảng cách từ logo đến chữ
+        object-fit: contain; // Đảm bảo logo không bị méo
+      }
+  
+      strong {
+        font-size: 1.5rem; // Kích thước chữ cho "yubeldocs"
+        font-weight: 700;
+        color: #2c3e50; // Màu chữ đậm
+      }
+    }
+  
+    // Menu bên phải
+    .d-flex.align-items-center.gap-3 {
+      display: flex;
+      align-items: center; // Căn giữa các mục menu theo chiều dọc
+      gap: 20px; // Khoảng cách giữa các mục
+      // Không thêm justify-content để giữ các mục sát bên phải
+  
+      span {
+        font-size: 1rem;
+        color: #34495e; // Màu chữ menu
+        cursor: pointer;
+        transition: color 0.3s ease; // Hiệu ứng chuyển màu mượt mà
+  
+        &:hover {
+          color: #3498db; // Màu khi hover
+        }
+  
+        // Icon bootstrap
+        i.bi {
+          font-size: 1.2rem;
+          color: #34495e;
+  
+          &:hover {
+            color: #3498db;
+          }
+        }
+      }
+    }
+  }
+  
+  // Responsive cho màn hình nhỏ
+  @media (max-width: 768px) {
+    .topbar {
+      padding: 10px 16px;
+  
+      .d-flex.align-items-center {
+        img {
+          height: 40px; // Giảm kích thước logo trên mobile
+          width: 40px;
+        }
+  
+        strong {
+          font-size: 1.2rem; // Giảm kích thước chữ trên mobile
+        }
+      }
+  
+      .d-flex.align-items-center.gap-3 {
+        gap: 12px; // Giảm khoảng cách trên mobile
+  
+        span {
+          font-size: 0.9rem; // Giảm kích thước chữ
+        }
+      }
+    }
+  }
+  
+  // Responsive cho màn hình rất nhỏ
+  @media (max-width: 576px) {
+    .topbar {
+      flex-direction: column; // Chuyển sang bố cục dọc
+      gap: 10px; // Khoảng cách giữa logo và menu
+      align-items: center; // Căn giữa theo chiều dọc
+  
+      .d-flex.align-items-center {
+        // Không cần margin khi ở bố cục dọc
+      }
+  
+      .d-flex.align-items-center.gap-3 {
+        flex-wrap: wrap; // Cho phép các mục menu xuống dòng nếu cần
+        justify-content: flex-end; // Đẩy menu sát bên phải
+      }
+    }
+  }

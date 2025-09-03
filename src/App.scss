@@ -1,0 +1,88 @@
+$topbar-height: 60px; // Chiều cao topbar
+
+.app-layout {
+  height: 100vh;
+  overflow: hidden;
+
+  // Topbar cố định trên cùng
+  .topbar-container {
+    height: $topbar-height;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background-color: #ffffff;
+    border-bottom: 1px solid #ddd;
+  }
+
+  // Phần nội dung bên dưới topbar
+  .content-container {
+    display: flex;
+    height: calc(100vh - $topbar-height);
+    margin-top: $topbar-height;
+
+    // Sidebar
+    .sidebar-container {
+      width: 292px;
+      overflow-y: auto; // Giữ thanh cuộn dọc
+      overflow-x: hidden; // Bỏ thanh cuộn ngang
+      border-right: 1px solid #ddd;
+      box-sizing: border-box; // Đảm bảo padding/border không làm vượt chiều rộng
+    }
+
+    // Nội dung chính
+    .main-content {
+      flex-grow: 1;
+      overflow-y: auto; // Giữ thanh cuộn dọc
+      overflow-x: hidden; // Bỏ thanh cuộn ngang
+      padding: 20px;
+      background-color: #f8f9fa;
+      box-sizing: border-box; // Đảm bảo padding/border không làm vượt chiều rộng
+    }
+  }
+}
+
+// Responsive cho màn hình nhỏ
+@media (max-width: 768px) {
+  .app-layout {
+    .content-container {
+      .sidebar-container {
+        width: 200px; // Giảm chiều rộng sidebar trên mobile
+        overflow-y: auto; // Giữ thanh cuộn dọc
+        overflow-x: hidden; // Bỏ thanh cuộn ngang
+      }
+
+      .main-content {
+        padding: 15px; // Giảm padding trên mobile
+        overflow-y: auto; // Giữ thanh cuộn dọc
+        overflow-x: hidden; // Bỏ thanh cuộn ngang
+      }
+    }
+  }
+}
+
+// Responsive cho màn hình rất nhỏ (dưới 576px)
+@media (max-width: 576px) {
+  .app-layout {
+    .content-container {
+      flex-direction: column; // Chuyển sang bố cục dọc
+
+      .sidebar-container {
+        width: 100%; // Sidebar chiếm toàn bộ chiều rộng
+        height: auto; // Tự động điều chỉnh chiều cao
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+        overflow-y: auto; // Giữ thanh cuộn dọc
+        overflow-x: hidden; // Bỏ thanh cuộn ngang
+      }
+
+      .main-content {
+        flex-grow: 1;
+        height: auto; // Tự động điều chỉnh chiều cao
+        overflow-y: auto; // Giữ thanh cuộn dọc
+        overflow-x: hidden; // Bỏ thanh cuộn ngang
+      }
+    }
+  }
+}

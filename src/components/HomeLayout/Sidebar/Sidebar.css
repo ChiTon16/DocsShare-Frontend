@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@reference "tailwindcss/utilities";
+
+@layer components {
+  /* Hộp dropdown: nền, viền, bo góc, bóng */
+  .dropdown-with-arrow {
+    @apply relative rounded-xl border border-gray-200 shadow-lg z-[9999] bg-white;
+  }
+
+  /* Tam giác viền (bóng) – lớp dưới */
+  .dropdown-with-arrow::before {
+    content: "";
+    position: absolute;
+    top: var(--arrow-top, 20px); /* căn giữa theo nút bằng CSS var */
+    left: -10px;                 /* nhô ra ngoài 10px bên trái */
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 10px solid #d1d5db; /* gray-300 */
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.08));
+  }
+
+  /* Tam giác nền trắng – lớp trên */
+  .dropdown-with-arrow::after {
+    content: "";
+    position: absolute;
+    top: calc(var(--arrow-top, 20px) + 1px);
+    left: -9px;                  /* phủ lên viền để mỏng đẹp */
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-right: 9px solid #ffffff; /* nền trắng */
+  }
+}
