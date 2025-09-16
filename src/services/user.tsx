@@ -32,3 +32,18 @@ export async function getCurrentUser(signal?: AbortSignal): Promise<CurrentUser>
   }
 }
 
+export type UserDTO = {
+  userId: number;
+  name: string;
+  email: string;
+  schoolId?: number | null;
+  majorId?: number | null;
+  role?: string | null;
+  active?: boolean;
+  avatarUrl?: string | null;
+};
+
+export async function getUserById(userId: number, signal?: AbortSignal): Promise<UserDTO> {
+  const res = await axiosInstance.get<UserDTO>(`users/${userId}`, { signal });
+  return res.data;
+}

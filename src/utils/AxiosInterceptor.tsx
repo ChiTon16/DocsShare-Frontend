@@ -9,14 +9,11 @@ export const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-/** ---- Phần mới: trạng thái logout + callback khi auth lỗi ---- */
+/** ================== Trạng thái & tiện ích ================== */
 let isRefreshing = false;
 let waitQueue: Array<(t: string) => void> = [];
-
-// Khi user ấn Logout, đặt cờ này = true để KHÔNG tự refresh nữa
 let logoutInProgress = false;
 
-// App có thể set callback để điều hướng về /login
 let onAuthError: (() => void) | null = null;
 export function setOnAuthError(cb: () => void) {
   onAuthError = cb;
@@ -25,11 +22,7 @@ export function setOnAuthError(cb: () => void) {
 /** Gọi hàm này TRƯỚC khi xoá cookie ở auth.ts */
 export function markManualLogout() {
   logoutInProgress = true;
-
-  // Xoá header mặc định của axios
   delete (axiosInstance.defaults.headers as any)?.common?.Authorization;
-
-  // Huỷ mọi request đang chờ token refresh (nếu có)
   waitQueue = [];
 }
 
@@ -39,87 +32,114 @@ export function clearClientTokens() {
   Cookies.remove("refreshToken", { path: "/" });
 }
 
-/** ---- Request interceptor ---- */
+/** ================== Request Interceptor ================== */
 axiosInstance.interceptors.request.use((config) => {
-  const url = (config.url ?? "") as string;
+  const rawUrl = (config.url ?? "") as string;
+  const url = rawUrl || "";
+  const method = (config.method ?? "get").toString().toLowerCase();
 
-  // FormData -> để browser tự set boundary
   if (config.data instanceof FormData) {
     if (config.headers) delete (config.headers as any)["Content-Type"];
-  } else {
+  } else if (["post", "put", "patch", "delete"].includes(method) && config.data != null) {
     config.headers = config.headers || {};
     (config.headers as any)["Content-Type"] = "application/json";
+  } else if (config.headers) {
+    delete (config.headers as any)["Content-Type"];
   }
 
-  // Bỏ Authorization cho 3 endpoint auth
-  const noAuth =
+  const isAuthEndpoint =
     url.startsWith("/auth/login") ||
     url.startsWith("/auth/register") ||
-    url.startsWith("/auth/refresh-token");
+    url.startsWith("/auth/refresh-token") ||
+    url.includes("/auth/login") ||
+    url.includes("/auth/register") ||
+    url.includes("/auth/refresh-token");
 
-  if (noAuth) {
+  if (isAuthEndpoint) {
     if (config.headers) delete (config.headers as any).Authorization;
   } else {
     const token = Cookies.get("accessToken");
     if (token) {
+      config.headers = config.headers || {};
       (config.headers as any).Authorization = `Bearer ${token}`;
     } else if (config.headers) {
       delete (config.headers as any).Authorization;
     }
   }
+
   return config;
 });
 
-/** ---- Response interceptor: tự refresh khi 401 (trừ khi đang logout) ---- */
+/** ================== Response Interceptor (Refresh) ================== */
 axiosInstance.interceptors.response.use(
   (res) => res,
   async (error) => {
     const { config, response } = error || {};
-    const original = config || {};
-    const url = (original.url ?? "") as string;
+    const original = (config || {}) as any;
+    const rawUrl = (original.url ?? "") as string;
+    const url = rawUrl || "";
 
-    // Nếu không có response, hoặc không phải 401, hoặc endpoint auth -> trả lỗi luôn
-    if (
-      !response ||
-      response.status !== 401 ||
+    // 1) Không có response (network) -> trả lỗi luôn
+    if (!response) return Promise.reject(error);
+
+    const status = response.status as number;
+
+    // 2) Không refresh ở các endpoint auth
+    const isAuthEndpoint =
       url.startsWith("/auth/login") ||
       url.startsWith("/auth/register") ||
-      url.startsWith("/auth/refresh-token")
-    ) {
+      url.startsWith("/auth/refresh-token") ||
+      url.includes("/auth/login") ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/refresh-token");
+
+    if (isAuthEndpoint) return Promise.reject(error);
+
+    // 3) Quyết định có thử refresh hay không
+    // - Refresh nếu là 401
+    // - Hoặc 403 nhưng request có Authorization (rất có thể token hết hạn) -> tránh nhầm 403 do thiếu quyền.
+    const hadAuthHeader =
+      !!original?.headers?.Authorization || !!Cookies.get("accessToken");
+
+    const shouldTryRefresh =
+      status === 401 || (status === 403 && hadAuthHeader);
+
+    if (!shouldTryRefresh) {
       return Promise.reject(error);
     }
 
-    // Nếu đang logout thủ công -> không refresh, dọn client, bắn callback
+    // Nếu đang logout thủ công → không refresh
     if (logoutInProgress) {
       clearClientTokens();
+      delete (axiosInstance.defaults.headers as any)?.common?.Authorization;
       onAuthError?.();
       return Promise.reject(error);
     }
 
-    // Đã thử refresh 1 lần cho request này rồi -> không thử lại nữa
-    if ((original as any)._retry) {
-      return Promise.reject(error);
-    }
-    (original as any)._retry = true;
+    // Không thử lại quá 1 lần
+    if (original._retry) return Promise.reject(error);
+    original._retry = true;
 
-    // Hàng đợi để tránh gọi refresh song song
+    // 4) Nếu đang refresh -> xếp hàng đợi
     if (isRefreshing) {
       return new Promise((resolve) => {
-        waitQueue.push((newToken) => {
+        waitQueue.push((newToken: string) => {
           original.headers = original.headers || {};
-          (original.headers as any).Authorization = `Bearer ${newToken}`;
+          original.headers.Authorization = `Bearer ${newToken}`;
           resolve(axiosInstance(original));
         });
       });
     }
 
+    // 5) Bắt đầu refresh
     isRefreshing = true;
     try {
-      // Server cấp token mới dựa trên refresh cookie (HttpOnly)
+      // Gọi refresh bằng refresh cookie HttpOnly
       const { data } = await axiosInstance.get("/auth/refresh-token");
-      const newToken = data?.token;
-      if (!newToken) throw new Error("No token in refresh response");
+      const newToken: string | undefined = data?.accessToken ?? data?.token;
+      if (!newToken) throw new Error("No access token in refresh response");
 
+      // Lưu access token mới (nếu bạn lưu ở cookie non-HttpOnly)
       Cookies.set("accessToken", newToken, {
         expires: 1,
         path: "/",
@@ -127,22 +147,22 @@ axiosInstance.interceptors.response.use(
         secure: location.protocol === "https:",
       });
 
-      // Cập nhật header mặc định cho các request sau
+      // Cập nhật default header
       (axiosInstance.defaults.headers as any).common = {
         ...(axiosInstance.defaults.headers as any).common,
         Authorization: `Bearer ${newToken}`,
       };
 
-      // Chạy các request đang chờ
+      // Giải phóng hàng đợi
       waitQueue.forEach((cb) => cb(newToken));
       waitQueue = [];
 
       // Thử lại request gốc
       original.headers = original.headers || {};
-      (original.headers as any).Authorization = `Bearer ${newToken}`;
+      original.headers.Authorization = `Bearer ${newToken}`;
       return axiosInstance(original);
     } catch (e) {
-      // Refresh fail -> dọn client và báo app điều hướng
+      // Refresh thất bại -> dọn token & báo app điều hướng login
       clearClientTokens();
       delete (axiosInstance.defaults.headers as any)?.common?.Authorization;
       onAuthError?.();
@@ -152,3 +172,5 @@ axiosInstance.interceptors.response.use(
     }
   }
 );
+
+export default axiosInstance;

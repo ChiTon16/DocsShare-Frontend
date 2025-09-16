@@ -1,6 +1,5 @@
 // src/components/Header.tsx
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import logo from "@/assets/images/icons/logo-docs.png";
 import { useAuth } from "@/context/AuthContext";
 import { logout } from "@/services/auth";
@@ -9,8 +8,7 @@ const Header = () => {
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const nav = useNavigate();
-  const { user, loading } = useAuth(); // dùng loading để quyết định skeleton
+  const { user, loading } = useAuth();
   const isLoadingUser = loading;
 
   useEffect(() => {

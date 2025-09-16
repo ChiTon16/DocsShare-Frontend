@@ -1,8 +1,9 @@
+// components/Base/Base.tsx
 import { useState, useEffect } from "react";
 import Header from "../HomeLayout/Header/Header";
 import Sidebar from "../HomeLayout/Sidebar/Sidebar";
-import Home from "../HomeLayout/Home/Home";
 import AuthGate from "../AuthGate";
+import { Outlet } from "react-router-dom";
 
 function Base() {
   const [collapsed, setCollapsed] = useState(false);
@@ -38,9 +39,12 @@ function Base() {
         )}
 
         {/* CỘT CONTENT: rất quan trọng => min-h-0 để không đội chiều cao */}
-        <div className="relative z-10 min-w-0 min-h-0 overflow-y-auto bg-white p-4 font-[DM_Sans]">
-          <Home />
-        </div>
+        <main
+          id="app-content-scroll"            // 👈 thêm id
+          className="relative z-10 min-w-0 min-h-0 overflow-y-auto bg-white font-[DM_Sans]"
+        >
+          <Outlet />
+        </main>
       </div>
     </div>
     </AuthGate>

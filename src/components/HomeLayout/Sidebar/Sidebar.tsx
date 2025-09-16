@@ -106,10 +106,10 @@ const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
   const upvoteCount = 0;
 
   const menuItems = [
-    { label: "Home", icon: <HomeIcon />, path: "/" },
+    { label: "Home", icon: <HomeIcon />, path: "/home" },
     { label: "My Library", icon: <LibraryBooksIcon />, path: "/library" },
     { label: "AI Notes", icon: <NotesIcon />, badge: "★", path: "/notes" },
-    { label: "Ask AI", icon: <ForumIcon />, badge: "★", path: "/ask" },
+    { label: "Chat Box", icon: <ForumIcon />, badge: "★", path: "/chat" },
     { label: "AI Quiz", icon: <QuizIcon />, badge: "New", path: "/quiz" },
     { label: "Recent", icon: <AccessTimeIcon />, dropdown: true, path: "/recent" },
   ];
